@@ -24,9 +24,13 @@ public:
     std::vector<float> vxc;
     std::vector<float> vyc;
     std::vector<float> vzc;
+    // transformed vertices
+    std::vector<float> tvxc;
+    std::vector<float> tvyc;
+    std::vector<float> tvzc;
 };
 
-class Vector {
+class Vector { 
 public:
     Coord cs;
     float xl = 0.0f;
@@ -167,11 +171,13 @@ public:
     }
 
     // Check vector intersection
-    bool vectorCheck(float stpdom, const std::string& level, int vecnum) {
+    bool vectorCheck(const std::string& level, int vecnum) {
         Vector::crdsysdim sst;
-        if (level == "XY" || level == "xy") {sst = Vector::crdsysdim::XY;
+        std::toupper(level[0]);
+        std::toupper(level[1]);
+        if (level == "XY") {sst = Vector::crdsysdim::XY;
         }
-        else if (level == "XZ" || level == "xz") 
+        else if (level == "XZ") 
         {sst = Vector::crdsysdim::XZ;
         }
         else {sst = Vector::crdsysdim::ZY;}
@@ -211,5 +217,76 @@ public:
                 return true;
         }
         return false;
+    }
+};
+
+class Transformation {
+    public:
+    Coord cs;
+    std::vector<float> linearTrans(int lane, float length) {
+    enum class dimlane {
+        X,
+        Y,
+        Z
+    };
+    dimlane dimension;
+    if (lane==1) {dimension=dimlane::X;}
+    else if (lane==2) {dimension=dimlane::Y;}
+    else {dimension=dimlane::Z;}
+    
+    
+        switch (dimension) {
+            case dimlane::X:
+                for(size_t i = 0; i < cs.vxc.size(); i++) {
+                    float trans = cs.vxc[i] + length;
+                    cs.tvxc.push_back(trans);
+                }
+                cs.vxc.swap(cs.tvxc);
+                cs.tvxc.clear();
+                break;
+
+            case dimlane::Y:
+                for(size_t i = 0; i < cs.vyc.size(); i++) {
+                    float trans = cs.vyc[i] + length;
+                    cs.tvyc.push_back(trans);
+                }
+                cs.vyc.swap(cs.tvyc);
+                cs.tvyc.clear();
+                break;
+
+            case dimlane::Z:
+                for(size_t i = 0; i < cs.vzc.size(); i++) {
+                    float trans = cs.vzc[i] + length;
+                    cs.tvzc.push_back(trans);
+                }
+                cs.vzc.swap(cs.tvzc);
+                cs.tvzc.clear();
+                break;
+        }
+    }
+
+    std::vector<float> turnTrans(int type, int degree) {
+        enum class axis {
+            X,
+            Y,
+            Z
+        };
+        axis chosen;
+        if (type==1) {chosen=axis::X;}
+        else if (type==2) {chosen=axis::Y;}
+        else {chosen=axis::Z;}
+        switch (chosen) {
+            case axis::X:
+                
+                break;
+
+            case axis::Y:
+                
+                break;
+
+            case axis::Z:
+                
+                break;
+        }
     }
 };
