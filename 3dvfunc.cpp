@@ -209,7 +209,7 @@ public:
         return false;
     }*/
 
-    /*this would be good if this was either 2d, or 3d with simple objects lik cubes or whatever*/
+    /*this would be good if this was either 2d, or 3d with simple objects like cubes or whatever*/
 
     void AABB() {};
 };
@@ -229,7 +229,7 @@ public:
         else if (lane==2) {dimension=dimlane::Y;}
         else {dimension=dimlane::Z;}
 
-	//applies the same transition in one dimension every single vertex
+	//applies the same transition in one dimension on every single vertex
         switch (dimension) {
             case dimlane::X:
                 for(size_t i = 0; i < cs.vxc.size(); i++) {
