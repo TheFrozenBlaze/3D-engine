@@ -5,10 +5,9 @@
 #include <fstream>
 #include <sstream>
 
-
 struct Coord {
 public:
-    //endpoint 
+    //endpoint
     std::vector<float> xcoords;
     std::vector<float> ycoords;
     std::vector<float> zcoords;
@@ -28,9 +27,17 @@ public:
     std::vector<float> tvxc;
     std::vector<float> tvyc;
     std::vector<float> tvzc;
+
+
+    struct FVI {float v1, v2, v3, v4; };
+    std::vector<std::vector<int>> fvi;//face vertex indices
+    struct FVNI {float vn1, vn2, vn3, vn4; };
+    std::vector<std::vector<int>> fvni;//face vertex normal indices
+    struct FVTI {float vt1, vt2, vt3, vt4; };
+    std::vector<std::vector<int>> fvti;//face vertex texture indices
 };
 
-class Vector { 
+class Vector {
 public:
     Coord cs;
     float xl = 0.0f;
@@ -59,17 +66,16 @@ public:
         zl = std::fabs(stpz - z);
         cs.zlen.push_back(zl);
 
-        float xzd = std::sqrt(std::pow(xl, 2) + std::pow(zl, 2));
-        float ydxz = std::sqrt(std::pow(xzd, 2) + std::pow(yl, 2));
+        float xzd = std::sqrt(xl * xl + zl * zl);
+        float ydxz = std::sqrt(xzd * xzd + yl * yl);
 
         return ydxz;
     }
 
     // Convert vector line to function form
-    void funcVector(int num, const std::string& level) {
+    /*void funcVector(int num, std::string level) {
         crdsysdim state;
-        std::toupper(level[0]);
-        std::toupper(level[1]);
+        std::transform(level.begin(), level.end(), level.begin(), [](unsigned char c) { return std::toupper(c); });
         if (level == "XY") {state = crdsysdim::XY;}
         else if (level == "XZ") {state = crdsysdim::XZ;}
         else {state = crdsysdim::ZY;}
@@ -83,69 +89,41 @@ public:
                 dx = cs.stpxcoords[num] - cs.xcoords[num];
                 dy = cs.stpycoords[num] - cs.ycoords[num];
                 stpdom = cs.stpycoords[num];
+                nondom = cs.stpxcoords[num];
                 break;
             case crdsysdim::XZ:
                 dx = cs.stpxcoords[num] - cs.xcoords[num];
                 dy = cs.stpzcoords[num] - cs.zcoords[num];
                 stpdom = cs.stpzcoords[num];
+                nondom = cs.stpxcoords[num];
                 break;
             case crdsysdim::ZY:
                 dx = cs.stpzcoords[num] - cs.zcoords[num];
                 dy = cs.stpycoords[num] - cs.ycoords[num];
                 stpdom = cs.stpycoords[num];
+                nondom = cs.stpzcoords[num];
                 break;
         }
 
-        a = std::fabs(dy);
-        b = std::fabs(dx);
-        c = std::sqrt(std::pow(a, 2) + std::pow(b, 2));
+
         if (dx == 0.0f) {
             m = INFINITY;
         } else {
             m = dy / dx;
         }
-        double degree = std::acos(b / c);
-        cc = std::fabs(stpdom) - ((b / std::cos(degree)) * std::sin(degree));
-    }
 
-    // Convert vector with rotation
-    std::vector<float> vecConverter(float len, float x, float y, float z, float ydeg, float zdeg) {
-        float yRad = static_cast<float>(ydeg * M_PI / 180.0);
-        float zRad = static_cast<float>(zdeg * M_PI / 180.0);
+        float cc = stpdom-m*nondom;
 
-        float cx = x;
-        float cy = y;
-        float cz = z;
+    }*/
+    /*correction:my solution was after fixes: double degree = std::atan(dy/dx); float cc= stpdom - std::tan(degree)*nondom; but chatgpt made me realize, that tan(degree) is just 'm', and I don't have to deal with division by zero and trig...(mentioned, because in this challenge ai isn't allowed to make my code, at max give me hints) - this will be later repurposed and refined, but this is one of my greatest creations for now, and I want to preserve it in its almost original form in its original place*/
 
-        float x0 = cx - len;
-        float y0 = cy;
-        float z0 = cz;
-
-        float dx = x0 - cx;
-        float dy = y0 - cy;
-        float dz = z0 - cz;
-
-        float dx1 = dx * std::cos(yRad) + dz * std::sin(yRad);
-        float dy1 = dy;
-        float dz1 = -dx * std::sin(yRad) + dz * std::cos(yRad);
-
-        float dx2 = dx1 * std::cos(zRad) - dy1 * std::sin(zRad);
-        float dy2 = dx1 * std::sin(zRad) + dy1 * std::cos(zRad);
-        float dz2 = dz1;
-
-        float newX = cx + dx2;
-        float newY = cy + dy2;
-        float newZ = cz + dz2;
-
-        return { newX, newY, newZ };
-    }
-};
+ };
 
 class objIdent {
 public:
     Vector vec;
     Coord cs;
-    std::vector<std::vector<float>> vertices;
+
 
     // Read .obj file
     void objReader(const std::string& filename) {
@@ -155,29 +133,40 @@ public:
             return;
         }
 
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.size() > 1 && line[0] == 'v' && line[1] == ' ') {
-                std::istringstream iss(line);
-                std::string v;
-                float x, y, z;
-                iss >> v >> x >> y >> z;
-                vertices.push_back({x, y, z});
-                cs.vxc.push_back(x);
-                cs.vyc.push_back(y);
-                cs.vzc.push_back(z);
-            }
+            std::string line;
+            while (std::getline(file, line)) {
+                if (line.size() > 1 && line[0] == 'v' && line[1] == ' ') {
+                    std::istringstream iss(line);
+                    std::string v;
+                    float x, y, z;
+                    iss >> v >> x >> y >> z;
+                    cs.vxc.push_back(x);
+                    cs.vyc.push_back(y);
+                    cs.vzc.push_back(z);
+                }
+                if (line.size() > 1 && line[0]=='f' && line[1]==' ') {
+                    std::istringstream iss(line);
+                    std::string v;
+                    char c;
+                    int v1, v2, v3, v4, vn1,vn2, vn3, vn4,vt1, vt2,vt3, vt4;
+
+                    iss >> v >> v1 >> c >> vn1 >> c >> vt1 >> v2 >> c >> vn2 >> c >> vt2 >> v3 >> c >> vn3 >> c >> vt3 >>  v4 >> c >> vn4 >> c >> vt4;
+
+                    cs.fvi.push_back( {v1, v2, v3, v4});
+                    cs.fvti.push_back({vt1, vt2, vt3, vt4});
+                    cs.fvni.push_back({vn1, vn2, vn3, vn4});
+                }
         }
+
     }
 
     // Check vector intersection
-    bool vectorCheck(const std::string& level, int vecnum) {
+    /*bool vectorCheck(const std::string& level, int vecnum) {
         Vector::crdsysdim sst;
-        std::toupper(level[0]);
-        std::toupper(level[1]);
+         std::transform(level.begin(), level.end(), level.begin(), [](unsigned char c) { return std::toupper(c); });
         if (level == "XY") {sst = Vector::crdsysdim::XY;
         }
-        else if (level == "XZ") 
+        else if (level == "XZ")
         {sst = Vector::crdsysdim::XZ;
         }
         else {sst = Vector::crdsysdim::ZY;}
@@ -198,6 +187,7 @@ public:
                     else below++;
                     break;
 
+
                 case Vector::crdsysdim::XZ:
                     check = (cs.vxc[i] * vec.m) + vec.cc;
                     if (check == cs.vzc[i]) return true;
@@ -217,24 +207,29 @@ public:
                 return true;
         }
         return false;
-    }
+    }*/
+
+    /*this would be good if this was either 2d, or 3d with simple objects lik cubes or whatever*/
+
+    void AABB() {};
 };
 
+//ONLY FOR RENDERED OBJECTS
 class Transformation {
-    public:
+public:
     Coord cs;
-    std::vector<float> linearTrans(int lane, float length) {
-    enum class dimlane {
-        X,
-        Y,
-        Z
-    };
-    dimlane dimension;
-    if (lane==1) {dimension=dimlane::X;}
-    else if (lane==2) {dimension=dimlane::Y;}
-    else {dimension=dimlane::Z;}
-    
-    
+    void linearTrans(int lane, float length) {
+        enum class dimlane {
+            X,
+            Y,
+            Z
+        };
+        dimlane dimension;
+        if (lane==1) {dimension=dimlane::X;}
+        else if (lane==2) {dimension=dimlane::Y;}
+        else {dimension=dimlane::Z;}
+
+	//applies the same transition in one dimension every single vertex
         switch (dimension) {
             case dimlane::X:
                 for(size_t i = 0; i < cs.vxc.size(); i++) {
@@ -263,30 +258,67 @@ class Transformation {
                 cs.tvzc.clear();
                 break;
         }
-    }
-
-    std::vector<float> turnTrans(int type, int degree) {
+    };
+    //rotates the object with 2D matrices(just like freecad)
+    void turnTrans(int type, int degree) {
         enum class axis {
-            X,
-            Y,
-            Z
+            XY,
+            YZ,
+            ZX
         };
         axis chosen;
-        if (type==1) {chosen=axis::X;}
-        else if (type==2) {chosen=axis::Y;}
-        else {chosen=axis::Z;}
-        switch (chosen) {
-            case axis::X:
-                
+        if (type==1) {chosen=axis::XY;}
+        else if (type==2) {chosen=axis::YZ;}
+        else {chosen=axis::ZX;}
+        float Radian = static_cast<float>(degree * M_PI / 180);
+	float vertical = std::sin(Radian);
+	float horizontal = std::cos(Radian);
+
+	switch (chosen) {
+            case axis::XY:
+                    for(size_t i =0; i < cs.vxc.size(); i++) {
+                    float transvert = cs.vyc[i]*horizontal + cs.vxc[i]*vertical;
+                    float transhor = cs.vyc[i]*vertical*(-1) + cs.vxc[i]*horizontal;
+                    cs.tvxc.push_back(transhor);
+                    cs.tvyc.push_back(transvert);
+                    }
+                    cs.vxc.swap(cs.tvxc);
+                    cs.tvxc.clear();
+                    cs.vyc.swap(cs.tvyc);
+                    cs.tvyc.clear();
+
+
                 break;
 
-            case axis::Y:
-                
+            case axis::YZ:
+                for(size_t i =0; i < cs.vyc.size(); i++) {
+                    float transvert = cs.vzc[i]*horizontal + cs.vyc[i]*vertical;
+                    float transhor = cs.vzc[i]*vertical*(-1) + cs.vyc[i]*horizontal;
+                    cs.tvyc.push_back(transhor);
+                    cs.tvzc.push_back(transvert);
+                    }
+                    cs.vzc.swap(cs.tvzc);
+                    cs.tvzc.clear();
+                    cs.vyc.swap(cs.tvyc);
+                    cs.tvyc.clear();
                 break;
 
-            case axis::Z:
-                
+            case axis::ZX:
+                for(size_t i =0; i < cs.vxc.size(); i++) {
+                    float transvert = cs.vxc[i]*horizontal + cs.vzc[i]*vertical;
+                    float transhor = cs.vxc[i]*vertical*(-1) + cs.vzc[i]*horizontal;
+                    cs.tvxc.push_back(transhor);
+                    cs.tvzc.push_back(transvert);
+                    }
+                    cs.vxc.swap(cs.tvxc);
+                    cs.tvxc.clear();
+                    cs.vzc.swap(cs.tvzc);
+                    cs.tvzc.clear();
                 break;
         }
     }
 };
+
+
+/*float transvert = cs.vyc[i]*horizontal + cs.vyc[i]*vertical;
+ float transhor = cs.vxc[i]*vertical*(-1) + cs.vxc[i]*horizontal;*/
