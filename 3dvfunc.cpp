@@ -29,12 +29,8 @@ public:
     std::vector<float> tvzc;
 
 
-    struct FVI {float v1, v2, v3, v4; };
-    std::vector<std::vector<int>> fvi;//face vertex indices
-    struct FVNI {float vn1, vn2, vn3, vn4; };
-    std::vector<std::vector<int>> fvni;//face vertex normal indices
-    struct FVTI {float vt1, vt2, vt3, vt4; };
-    std::vector<std::vector<int>> fvti;//face vertex texture indices
+    struct FVI {int v, vt, vn,  fi; };
+    std::vector<FVI> fvi;//face vertex indices
 };
 
 class Vector {
@@ -124,6 +120,8 @@ public:
     Vector vec;
     Coord cs;
 
+    int vectorindex = 0;
+    int faceindex = 0;
 
     // Read .obj file
     void objReader(const std::string& filename) {
@@ -145,19 +143,57 @@ public:
                     cs.vzc.push_back(z);
                 }
                 if (line.size() > 1 && line[0]=='f' && line[1]==' ') {
+                    faceindex += 1;
+                    vectorindex = 0;
+                    line.erase(0, 2);
+                    cs.fvi.push_back({0,0,0,0});
+                    int point = 2; //where the f-function writes its outputs (((2=v, 3=vt))
+                    int number = 0;
+                    std::string numberstring;
                     std::istringstream iss(line);
-                    std::string v;
-                    char c;
-                    int v1, v2, v3, v4, vn1,vn2, vn3, vn4,vt1, vt2,vt3, vt4;
+                    for (size_t i = 0; i < line.size(); i++) {
+                        if(line[i] == ' ' || i == line.size() - 1) {
+                            if (i == line.size() - 1 && line[i] != ' ') {
+                                numberstring.push_back(line[i]);
+                            }
+                            number = std::stoi(numberstring);
+                            cs.fvi[vectorindex].vn = number;
+                            cs.fvi[vectorindex].fi  = faceindex-1;
+                            vectorindex ++;
+                            numberstring.clear();
+                            number = 0;
+                            point = 2;
+                            if (i != line.size() - 1 && line[i] == ' ' ) {
+                            cs.fvi.push_back({0,0,0,0});
+                            }
+                            continue;
+                        } else {
+                        if (i > 0 && line[i] == '/' && line[i-1]== '/') {
+                            cs.fvi[vectorindex].vt = -1;
+                            continue;
 
-                    iss >> v >> v1 >> c >> vn1 >> c >> vt1 >> v2 >> c >> vn2 >> c >> vt2 >> v3 >> c >> vn3 >> c >> vt3 >>  v4 >> c >> vn4 >> c >> vt4;
+                        } else if  (line[i] == '/') {
+                            if(point == 2){
+                                number = std::stoi(numberstring);
+                                cs.fvi[vectorindex].v = number;
+                                point ++;
+                                numberstring.clear();
+                                number = 0;
+                                continue;
+                            } else {
+                                number = std::stoi(numberstring);
+                                cs.fvi[vectorindex].vt = number;
+                                number = 0;
+                                numberstring.clear();
+                                continue;
+                            }
+                        } else {
+                            numberstring.push_back(line[i]);
+                        }
+                    }
 
-                    cs.fvi.push_back( {v1, v2, v3, v4});
-                    cs.fvti.push_back({vt1, vt2, vt3, vt4});
-                    cs.fvni.push_back({vn1, vn2, vn3, vn4});
-                }
+            }
         }
-
     }
 
     // Check vector intersection
@@ -212,6 +248,7 @@ public:
     /*this would be good if this was either 2d, or 3d with simple objects like cubes or whatever*/
 
     void AABB() {};
+
 };
 
 //ONLY FOR RENDERED OBJECTS
@@ -315,6 +352,7 @@ public:
                     cs.vzc.swap(cs.tvzc);
                     cs.tvzc.clear();
                 break;
+            }
         }
     }
 };
