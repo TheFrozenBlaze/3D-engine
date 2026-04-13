@@ -23,6 +23,10 @@ public:
     std::vector<float> vxc;
     std::vector<float> vyc;
     std::vector<float> vzc;
+    //vertex normals
+    std::vector<float> vnxc;
+    std::vector<float> vnyc;
+    std::vector<float> vnzc;
     // transformed vertices
     std::vector<float> tvxc;
     std::vector<float> tvyc;
@@ -141,13 +145,13 @@ public:
                     cs.vxc.push_back(x);
                     cs.vyc.push_back(y);
                     cs.vzc.push_back(z);
-                }
-                if (line.size() > 1 && line[0]=='f' && line[1]==' ') {
+                }else if (line.size() > 1 && line[0]=='f' && line[1]==' ') {
                     faceindex += 1;
+                    int slashdetect = 0;
                     vectorindex = 0;
                     line.erase(0, 2);
                     cs.fvi.push_back({0,0,0,0});
-                    int point = 2; //where the f-function writes its outputs (((2=v, 3=vt))
+                    int point = 2; //where the f-function writes its outputs (((2=v, 3=vt, 4=vn))
                     int number = 0;
                     std::string numberstring;
                     std::istringstream iss(line);
@@ -156,13 +160,36 @@ public:
                             if (i == line.size() - 1 && line[i] != ' ') {
                                 numberstring.push_back(line[i]);
                             }
-                            number = std::stoi(numberstring);
-                            cs.fvi[vectorindex].vn = number;
-                            cs.fvi[vectorindex].fi  = faceindex-1;
-                            vectorindex ++;
-                            numberstring.clear();
-                            number = 0;
-                            point = 2;
+                            if(point == 2){
+                                number = std::stoi(numberstring);
+                                cs.fvi[vectorindex].v = number;
+                                cs.fvi[vectorindex].vt = -1;
+                                cs.fvi[vectorindex].vn = -1;
+                                numberstring.clear();
+                                number = 0;
+                                cs.fvi[vectorindex].fi  = faceindex-1;
+                                vectorindex++;
+                                point = 2;
+                                continue;
+                            } else if(point==3){
+                                number = std::stoi(numberstring);
+                                cs.fvi[vectorindex].vt = number;
+                                cs.fvi[vectorindex].vn = -1;
+                                number = 0;
+                                numberstring.clear();
+                                cs.fvi[vectorindex].fi  = faceindex-1;
+                                vectorindex++;
+                                point = 2;
+                                continue;
+                            }else{
+                                number = std::stoi(numberstring);
+                                cs.fvi[vectorindex].vn = number;
+                                cs.fvi[vectorindex].fi  = faceindex-1;
+                                vectorindex++;
+                                numberstring.clear();
+                                number = 0;
+                                point = 2;
+                            }
                             if (i != line.size() - 1 && line[i] == ' ' ) {
                             cs.fvi.push_back({0,0,0,0});
                             }
@@ -170,13 +197,14 @@ public:
                         } else {
                         if (i > 0 && line[i] == '/' && line[i-1]== '/') {
                             cs.fvi[vectorindex].vt = -1;
+                            point++;
                             continue;
 
                         } else if  (line[i] == '/') {
                             if(point == 2){
                                 number = std::stoi(numberstring);
                                 cs.fvi[vectorindex].v = number;
-                                point ++;
+                                point++;
                                 numberstring.clear();
                                 number = 0;
                                 continue;
@@ -185,15 +213,25 @@ public:
                                 cs.fvi[vectorindex].vt = number;
                                 number = 0;
                                 numberstring.clear();
+                                point++;
                                 continue;
                             }
                         } else {
                             numberstring.push_back(line[i]);
                         }
                     }
-
+                }
+            } else if (line.size() > 1 && line[0] == 'v' && line[1] == 'n' && line[2] == ' ') {
+                std::istringstream iss(line);
+                std::string v;
+                float x, y, z;
+                iss >> v >> x >> y >> z;
+                cs.vnxc.push_back(x);
+                cs.vnyc.push_back(y);
+                cs.vnzc.push_back(z);
+            } else {
+                continue;
             }
-        }
     }
 
     // Check vector intersection
