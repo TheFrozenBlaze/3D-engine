@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 
+
 struct Coord {
 public:
     //endpoint
@@ -33,8 +34,12 @@ public:
     std::vector<float> tvzc;
 
 
-    struct FVI {int v, vt, vn,  fi; };
-    std::vector<FVI> fvi;//face vertex indices
+    struct Face {
+        struct Vertex { int v, vt, vn; };
+        std::vector<Face::Vertex> ver;
+    };
+
+    std::vector<Face> fvi;
 };
 
 class Vector {
@@ -145,72 +150,70 @@ public:
                     cs.vxc.push_back(x);
                     cs.vyc.push_back(y);
                     cs.vzc.push_back(z);
-                }else if (line.size() > 1 && line[0]=='f' && line[1]==' ') {
-                    faceindex += 1;
-                    int slashdetect = 0;
-                    vectorindex = 0;
-                    line.erase(0, 2);
-                    cs.fvi.push_back({0,0,0,0});
+                }   else if (line.size() > 1 && line[0]=='f' && line[1]==' ') {
+                    faceindex += 1; //self explanatory
+                    vectorindex = 0;//vertex index actually
+                    line.erase(0, 2); // cuts of the 'f' and the ' ' from the beginning
+                    cs.fvi.emplace_back();
+                    cs.fvi.back().ver.push_back({0,0,0});//creates space
                     int point = 2; //where the f-function writes its outputs (((2=v, 3=vt, 4=vn))
                     int number = 0;
-                    std::string numberstring;
+                    std::string numberstring;//loads the integers here
                     std::istringstream iss(line);
                     for (size_t i = 0; i < line.size(); i++) {
-                        if(line[i] == ' ' || i == line.size() - 1) {
-                            if (i == line.size() - 1 && line[i] != ' ') {
+                        if(line[i] == ' ' || i == line.size() - 1) { //where to write
+                            if (i == line.size() - 1 && line[i] != ' ') {//end of line write
                                 numberstring.push_back(line[i]);
                             }
                             if(point == 2){
-                                number = std::stoi(numberstring);
-                                cs.fvi[vectorindex].v = number;
-                                cs.fvi[vectorindex].vt = -1;
-                                cs.fvi[vectorindex].vn = -1;
+                                number = std::stoi(numberstring); // check for the v v v format
+                                cs.fvi[faceindex-1].ver[vectorindex].v = number;
+                                cs.fvi[faceindex-1].ver[vectorindex].vt = -1;
+                                cs.fvi[faceindex-1].ver[vectorindex].vn = -1;
                                 numberstring.clear();
                                 number = 0;
-                                cs.fvi[vectorindex].fi  = faceindex-1;
                                 vectorindex++;
                                 point = 2;
                                 continue;
                             } else if(point==3){
-                                number = std::stoi(numberstring);
-                                cs.fvi[vectorindex].vt = number;
-                                cs.fvi[vectorindex].vn = -1;
+                                number = std::stoi(numberstring); // checks for v/vt format
+                                cs.fvi[faceindex-1].ver[vectorindex].vt = number;
+                                cs.fvi[faceindex-1].ver[vectorindex].vn = -1;
                                 number = 0;
                                 numberstring.clear();
-                                cs.fvi[vectorindex].fi  = faceindex-1;
                                 vectorindex++;
                                 point = 2;
                                 continue;
                             }else{
-                                number = std::stoi(numberstring);
-                                cs.fvi[vectorindex].vn = number;
-                                cs.fvi[vectorindex].fi  = faceindex-1;
+                                number = std::stoi(numberstring); //checks for vn
+                                cs.fvi[faceindex-1].ver[vectorindex].vn = number;
                                 vectorindex++;
                                 numberstring.clear();
                                 number = 0;
                                 point = 2;
                             }
                             if (i != line.size() - 1 && line[i] == ' ' ) {
-                            cs.fvi.push_back({0,0,0,0});
+                                cs.fvi.emplace_back();
+                                cs.fvi.back().ver.push_back({0,0,0});
                             }
                             continue;
                         } else {
-                        if (i > 0 && line[i] == '/' && line[i-1]== '/') {
-                            cs.fvi[vectorindex].vt = -1;
+                        if (i > 0 && line[i] == '/' && line[i-1]== '/') { //check for v//vn format
+                            cs.fvi[faceindex-1].ver[vectorindex].vt = -1;
                             point++;
                             continue;
 
-                        } else if  (line[i] == '/') {
+                        } else if  (line[i] == '/') { //the standard v/vt/vn format
                             if(point == 2){
                                 number = std::stoi(numberstring);
-                                cs.fvi[vectorindex].v = number;
+                                cs.fvi[faceindex-1].ver[vectorindex].v = number;
                                 point++;
                                 numberstring.clear();
                                 number = 0;
                                 continue;
                             } else {
                                 number = std::stoi(numberstring);
-                                cs.fvi[vectorindex].vt = number;
+                                cs.fvi[faceindex-1].ver[vectorindex].vt = number;
                                 number = 0;
                                 numberstring.clear();
                                 point++;
@@ -221,7 +224,7 @@ public:
                         }
                     }
                 }
-            } else if (line.size() > 1 && line[0] == 'v' && line[1] == 'n' && line[2] == ' ') {
+            } else if (line.size() > 1 && line[0] == 'v' && line[1] == 'n' && line[2] == ' ') { //vn
                 std::istringstream iss(line);
                 std::string v;
                 float x, y, z;
@@ -285,7 +288,13 @@ public:
 
     /*this would be good if this was either 2d, or 3d with simple objects like cubes or whatever*/
 
-    void AABB() {};
+    void AABB() {
+        int fi = 0;
+        for(size_t i = 0; i < fvi.size(); i++) {
+
+
+        }
+    };
 
 };
 
@@ -392,7 +401,7 @@ public:
                 break;
             }
         }
-    }
+    };
 };
 
 
