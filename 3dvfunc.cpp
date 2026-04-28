@@ -4,6 +4,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <cstdint>
 
 
 struct Coord {
@@ -32,6 +34,8 @@ public:
     std::vector<float> tvxc;
     std::vector<float> tvyc;
     std::vector<float> tvzc;
+    //usable faces(that could be intersected)
+    std::vector<int> usable;
 
 
     struct Face {
@@ -235,7 +239,9 @@ public:
             } else {
                 continue;
             }
-    }
+        }
+
+    };
 
     // Check vector intersection
     /*bool vectorCheck(const std::string& level, int vecnum) {
@@ -288,14 +294,42 @@ public:
 
     /*this would be good if this was either 2d, or 3d with simple objects like cubes or whatever*/
 
-    void AABB() {
-        int fi = 0;
-        for(size_t i = 0; i < fvi.size(); i++) {
+    void AABB(uint32_t vecnum) {
+        std::vector<float> temporaryx;
+        std::vector<float> temporaryz;
+        std::vector<float> temporaryy;
 
+        for(size_t i = 0; i < cs.fvi.size(); i++) {
+            for(size_t j = 0; j < cs.fvi[i].ver.size(); j++) {
+                temporaryx.emplace_back(cs.vxc[cs.fvi[i].ver[j].v]-1);
+                temporaryy.emplace_back(cs.vyc[cs.fvi[i].ver[j].v]-1);
+                temporaryz.emplace_back(cs.vzc[cs.fvi[i].ver[j].v]-1);
+            }
+            auto mmx = std::minmax_element(temporaryx.begin(), temporaryx.end());
+            auto mmy = std::minmax_element(temporaryy.begin(), temporaryy.end());
+            auto mmz = std::minmax_element(temporaryz.begin(), temporaryz.end());
+            float temp;
+            float xmin = *mmx.first, xmax = *mmx.second;
+            float ymin = *mmy.first, ymax = *mmy.second;
+            float zmin = *mmz.first, zmax = *mmz.second;
 
+            float vxmin = std::min(cs.xcoords[vecnum], cs.stpxcoords[vecnum]);
+            float vxmax = std::max(cs.xcoords[vecnum], cs.stpxcoords[vecnum]);
+            float vymin = std::min(cs.ycoords[vecnum], cs.stpycoords[vecnum]);
+            float vymax = std::max(cs.ycoords[vecnum], cs.stpycoords[vecnum]);
+            float vzmin = std::min(cs.zcoords[vecnum], cs.stpzcoords[vecnum]);
+            float vzmax = std::max(cs.zcoords[vecnum], cs.stpzcoords[vecnum]);
+
+            if (xmax < vxmin || xmin > vxmax) continue;
+            if (ymax < vymin || ymin > vymax) continue;
+            if (zmax < vzmin || zmin > vzmax) continue;
+
+            cs.usable.push_back(i);
+            temporaryx.clear();
+            temporaryy.clear();
+            temporaryz.clear();
         }
     };
-
 };
 
 //ONLY FOR RENDERED OBJECTS
