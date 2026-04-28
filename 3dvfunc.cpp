@@ -295,11 +295,12 @@ public:
     /*this would be good if this was either 2d, or 3d with simple objects like cubes or whatever*/
 
     void AABB(uint32_t vecnum) {
-        std::vector<float> temporaryx;
-        std::vector<float> temporaryz;
-        std::vector<float> temporaryy;
+
 
         for(size_t i = 0; i < cs.fvi.size(); i++) {
+            std::vector<float> temporaryx;
+            std::vector<float> temporaryz;
+            std::vector<float> temporaryy;
             for(size_t j = 0; j < cs.fvi[i].ver.size(); j++) {
                 temporaryx.emplace_back(cs.vxc[cs.fvi[i].ver[j].v]-1);
                 temporaryy.emplace_back(cs.vyc[cs.fvi[i].ver[j].v]-1);
@@ -325,9 +326,6 @@ public:
             if (zmax < vzmin || zmin > vzmax) continue;
 
             cs.usable.push_back(i);
-            temporaryx.clear();
-            temporaryy.clear();
-            temporaryz.clear();
         }
     };
 };
